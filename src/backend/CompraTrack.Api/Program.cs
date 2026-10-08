@@ -96,6 +96,9 @@ if (app.Environment.IsDevelopment())
         .WithTitle("CompraTrack API")
         .AddPreferredSecuritySchemes("Bearer"))
        .AllowAnonymous();
+
+    // Abrir la raíz en el navegador lleva a la documentación en lugar de un 401 en blanco.
+    app.MapGet("/", () => Results.Redirect("/docs")).ExcludeFromDescription().AllowAnonymous();
 }
 
 // En desarrollo se usa HTTP local; en producción el hosting termina TLS y redirige.
