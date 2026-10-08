@@ -1,0 +1,23 @@
+name: Reiniciar datos del demo
+
+# Todas las noches restaura los datos ficticios del demo público (los visitantes pueden crear,
+# anular o recibir mercadería). También se puede correr a mano desde la pestaña Actions.
+on:
+  schedule:
+    - cron: '0 7 * * *'   # 07:00 UTC = 04:00 en Argentina
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reiniciar:
+    if: vars.API_URL != ''   # se saltea hasta que el demo esté publicado
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reiniciar
+        run: |
+          # El primer pedido puede tardar: la API y la base se despiertan si estaban en reposo.
+          curl -fsS --retry 5 --retry-delay 20 --retry-all-errors --max-time 180 \
+            -X POST "${{ vars.API_URL }}/api/demo/reiniciar" \
+            -H "X-Clave-Reinicio: ${{ secrets.DEMO_CLAVE_REINICIO }}"

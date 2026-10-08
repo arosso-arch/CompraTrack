@@ -1,31 +1,31 @@
 /*
     CompraTrack - Esquema de base de datos
     -----------------------------------------------------------------
-    Crea (o recrea) la base CompraTrack con todas sus tablas, la
-    secuencia de numeración de órdenes y la vista de estado de entrega.
+    Crea las tablas, la secuencia de numeración de órdenes y la vista de
+    estado de entrega dentro de la base a la que se está conectado.
 
-    ATENCIÓN: si la base ya existe, se elimina y se vuelve a crear.
-    Pensado para entornos de desarrollo y demo.
+    ATENCIÓN: si los objetos ya existen, se eliminan y se vuelven a crear
+    (se pierden los datos). Pensado para desarrollo y para el demo.
 
-    Ejecutar:
-        sqlcmd -S "(localdb)\MSSQLLocalDB" -i database\01_esquema.sql
+    No crea la base ni usa USE, así funciona igual en SQL Server local y
+    en Azure SQL Database, donde no se puede cambiar de base desde un script.
+
+    Ejecutar (con la base ya creada, ver 00_crear_base.sql):
+        sqlcmd -S <servidor> -d CompraTrack -i database\01_esquema.sql
 */
 
 SET NOCOUNT ON;
-USE master;
 GO
 
-IF DB_ID('CompraTrack') IS NOT NULL
-BEGIN
-    ALTER DATABASE CompraTrack SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE CompraTrack;
-END
-GO
+------------------------------------------------------------
+-- 0) Borrar lo existente (en orden inverso a las dependencias)
+------------------------------------------------------------
 
-CREATE DATABASE CompraTrack COLLATE Modern_Spanish_CI_AS;
-GO
-
-USE CompraTrack;
+DROP VIEW     IF EXISTS dbo.vw_EstadoEntregaItem;
+DROP TABLE    IF EXISTS dbo.EnvioOrden, dbo.Recepcion, dbo.OrdenCompraItem, dbo.OrdenCompra,
+                        dbo.ProveedorProducto, dbo.Formato, dbo.Gramaje, dbo.TipoProducto, dbo.Proveedor,
+                        dbo.UsuarioPermiso, dbo.Usuario, dbo.RolPermiso, dbo.Permiso, dbo.Rol;
+DROP SEQUENCE IF EXISTS dbo.SeqNumeroOrden;
 GO
 
 ------------------------------------------------------------

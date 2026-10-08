@@ -1,6 +1,7 @@
 using CompraTrack.Api.Common;
 using CompraTrack.Api.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CompraTrack.Api.Features.Ordenes;
 
@@ -32,6 +33,7 @@ public sealed class OrdenesController(OrdenRepository repo, OrdenService service
     /// <summary>Envía la orden por mail con el PDF adjunto y registra el envío.</summary>
     [HttpPost("{id:int}/enviar")]
     [RequierePermiso(Permisos.OrdenesEnviar)]
+    [EnableRateLimiting("envio")]
     public Task<ResultadoEnvio> Enviar(int id, EnviarOrdenRequest request, CancellationToken ct) =>
         documentos.EnviarAsync(id, request, User.ObtenerUsuarioId(), ct);
 

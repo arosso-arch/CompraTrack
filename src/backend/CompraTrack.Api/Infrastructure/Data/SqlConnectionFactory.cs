@@ -14,9 +14,21 @@ public sealed class SqlConnectionFactory(IConfiguration configuration) : IDbConn
     private readonly string _cadena = configuration.GetConnectionString("CompraTrack")
         ?? throw new InvalidOperationException("Falta la cadena de conexión 'ConnectionStrings:CompraTrack'.");
 
+    /// <summary>
+    /// Reintenta la conexión ante errores transitorios. Azure SQL en modo serverless se pausa sin uso y,
+    /// mientras se reanuda (hasta ~1 minuto), rechaza conexiones con errores como 40613.
+    /// </summary>
+    private static readonly SqlRetryLogicBaseProvider Reintentos = SqlConfigurableRetryFactory.CreateExponentialRetryProvider(
+        new SqlRetryLogicOption
+        {
+            NumberOfTries = 6,
+            DeltaTime = TimeSpan.FromSeconds(2),
+            MaxTimeInterval = TimeSpan.FromSeconds(20),
+        });
+
     public async Task<SqlConnection> AbrirAsync(CancellationToken ct = default)
     {
-        var conexion = new SqlConnection(_cadena);
+        var conexion = new SqlConnection(_cadena) { RetryLogicProvider = Reintentos };
         await conexion.OpenAsync(ct);
         return conexion;
     }

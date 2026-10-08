@@ -81,7 +81,8 @@ jobs:
         run: |
           docker cp database/. "$CONTENEDOR":/tmp/database
           sqlcmd() { docker exec "$CONTENEDOR" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Ci-Password-123' -b -f 65001 "$@"; }
-          sqlcmd -i /tmp/database/01_esquema.sql
+          sqlcmd -i /tmp/database/00_crear_base.sql
+          sqlcmd -d CompraTrack -i /tmp/database/01_esquema.sql
           sqlcmd -d CompraTrack -i /tmp/database/02_datos_demo.sql
 
       - name: Verificar los datos cargados

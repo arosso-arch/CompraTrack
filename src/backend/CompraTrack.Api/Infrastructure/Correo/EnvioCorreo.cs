@@ -63,5 +63,14 @@ public sealed class EnvioCorreoCarpeta(IOptions<CorreoOptions> opciones, IHostEn
         var archivo = Path.Combine(carpeta, $"{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..8]}.eml");
         await mensaje.WriteToAsync(archivo, ct);
         logger.LogInformation("Correo guardado en {Archivo} (modo Carpeta, no se envió)", archivo);
+
+        DepurarAntiguos(carpeta);
+    }
+
+    /// <summary>Conserva solo los últimos mails, para que el demo público no llene el disco.</summary>
+    private static void DepurarAntiguos(string carpeta, int conservar = 50)
+    {
+        foreach (var viejo in new DirectoryInfo(carpeta).GetFiles("*.eml").OrderByDescending(f => f.Name).Skip(conservar))
+            viejo.Delete();
     }
 }

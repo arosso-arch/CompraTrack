@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using CompraTrack.Api.Features.Auth;
 using CompraTrack.Api.Features.Catalogo;
+using CompraTrack.Api.Features.Demo;
 using CompraTrack.Api.Features.Ordenes;
 using CompraTrack.Api.Features.Proveedores;
 using CompraTrack.Api.Features.Recepciones;
@@ -15,6 +16,7 @@ using CompraTrack.Api.Infrastructure.Errors;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -83,14 +85,30 @@ builder.Services.AddAuthorization(o =>
     o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
 });
 
-// Máximo 10 intentos de login por minuto por IP.
+// Límites por IP: 300 pedidos por minuto en general, 10 intentos de login por minuto y 10 envíos de mail por hora.
+static string IpCliente(HttpContext http) => http.Connection.RemoteIpAddress?.ToString() ?? "desconocida";
+
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(http => RateLimitPartition.GetFixedWindowLimiter(
+        IpCliente(http), _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1) }));
     o.AddPolicy("login", http => RateLimitPartition.GetFixedWindowLimiter(
-        http.Connection.RemoteIpAddress?.ToString() ?? "desconocida",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+        IpCliente(http), _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+    o.AddPolicy("envio", http => RateLimitPartition.GetFixedWindowLimiter(
+        IpCliente(http), _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromHours(1) }));
 });
+
+// En Azure la API está detrás de un proxy: la IP real del visitante y el esquema (https) llegan en
+// los headers X-Forwarded-*. Sin esto, todos los visitantes compartirían los límites de arriba.
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownIPNetworks.Clear();   // el proxy de Azure no tiene IPs fijas conocidas
+    o.KnownProxies.Clear();
+});
+
+builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Seccion));
 
 // ---------- API ----------
 builder.Services.AddControllers(o => o.ModelMetadataDetailsProviders.Add(new MensajesValidacionEnEspanol()))
@@ -115,10 +133,12 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.WithOrigins(origenes).Al
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment())
+// La documentación interactiva se publica en desarrollo y, en el demo, si Api:Documentacion = true.
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Api:Documentacion"))
 {
     app.MapOpenApi().AllowAnonymous();
     app.MapScalarApiReference("/docs", o => o
