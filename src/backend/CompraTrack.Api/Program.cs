@@ -75,9 +75,20 @@ builder.Services.AddRateLimiter(o =>
 });
 
 // ---------- API ----------
-builder.Services.AddControllers()
+builder.Services.AddControllers(o => o.ModelMetadataDetailsProviders.Add(new MensajesValidacionEnEspanol()))
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
+{
+    if (ctx.ProblemDetails.Status == StatusCodes.Status400BadRequest)
+        ctx.ProblemDetails.Title = "Hay datos inválidos";
+    else if (ctx.ProblemDetails.Status == StatusCodes.Status403Forbidden)
+    {
+        ctx.ProblemDetails.Title = "Sin permiso";
+        ctx.ProblemDetails.Detail ??= "No tenés permiso para realizar esta operación.";
+    }
+    else if (ctx.ProblemDetails.Status == StatusCodes.Status401Unauthorized && ctx.ProblemDetails.Title == "Unauthorized")
+        ctx.ProblemDetails.Title = "Sesión no válida";   // no pisa el "Credenciales inválidas" del login
+});
 builder.Services.AddExceptionHandler<ManejadorGlobalErrores>();
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer<EsquemaSeguridadBearer>());
 
