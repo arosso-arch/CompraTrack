@@ -19,3 +19,25 @@ export const esquemaItem = z.object({
   cantidadKg: numeroRequerido('Ingresá la cantidad').pipe(z.number().positive('La cantidad debe ser mayor a 0').max(99_999_999)),
 })
 
+
+/** Misma regla que la API (ReglasUsuario.ValidarClave): 8 caracteres o más, con letras y números. */
+export const esquemaClave = z.string()
+  .min(8, 'Mínimo 8 caracteres')
+  .max(100, 'Máximo 100 caracteres')
+  .refine((c) => /[a-zA-Z]/.test(c) && /\d/.test(c), 'Tiene que combinar letras y números')
+
+/** Contraseña aleatoria de 12 caracteres que cumple la regla (sin caracteres ambiguos como 0/O o 1/l). */
+export function generarClave() {
+  const letras = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
+  const numeros = '23456789'
+  const todos = letras + numeros
+  const azar = (n: number) => crypto.getRandomValues(new Uint32Array(1))[0] % n
+  const caracteres = [letras[azar(letras.length)], numeros[azar(numeros.length)],
+    ...Array.from({ length: 10 }, () => todos[azar(todos.length)])]
+  // Mezcla para que la letra y el número garantizados no queden siempre al principio.
+  for (let i = caracteres.length - 1; i > 0; i--) {
+    const j = azar(i + 1)
+    ;[caracteres[i], caracteres[j]] = [caracteres[j], caracteres[i]]
+  }
+  return caracteres.join('')
+}

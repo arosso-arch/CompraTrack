@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
-import { BarChart3, ClipboardList, Home, LogOut, Menu, PackageCheck, Truck, X } from 'lucide-react'
+import { BarChart3, ClipboardList, Home, KeyRound, LogOut, Menu, PackageCheck, Truck, Users, X } from 'lucide-react'
 import { PERMISOS, type Permiso } from '@/api/tipos'
 import { useAuth } from '@/auth/contexto'
 import { cx } from '@/lib/cx'
 import { Logo } from './Logo'
+import { ModalMiClave } from './ModalMiClave'
 
 const secciones: { a: string; texto: string; icono: typeof Home; permiso: Permiso }[] = [
   { a: '/', texto: 'Inicio', icono: Home, permiso: PERMISOS.ordenesVer },
@@ -12,11 +13,13 @@ const secciones: { a: string; texto: string; icono: typeof Home; permiso: Permis
   { a: '/recepciones', texto: 'Recepciones', icono: PackageCheck, permiso: PERMISOS.ordenesVer },
   { a: '/proveedores', texto: 'Proveedores', icono: Truck, permiso: PERMISOS.proveedoresVer },
   { a: '/reportes', texto: 'Reportes', icono: BarChart3, permiso: PERMISOS.reportesVer },
+  { a: '/usuarios', texto: 'Usuarios', icono: Users, permiso: PERMISOS.usuariosGestionar },
 ]
 
 export function Layout() {
   const { usuario, cerrarSesion, tienePermiso } = useAuth()
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const [cambiandoClave, setCambiandoClave] = useState(false)
 
   const navegacion = (
     <nav className="flex flex-1 flex-col gap-1">
@@ -49,14 +52,23 @@ export function Layout() {
           <p className="truncate text-xs text-slate-500">{usuario.rol}</p>
         </div>
         <button
-          onClick={cerrarSesion}
+          onClick={() => { setCambiandoClave(true); setMenuAbierto(false) }}
           className="rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          title="Cambiar mi contraseña"
+          aria-label="Cambiar mi contraseña"
+        >
+          <KeyRound className="size-4" />
+        </button>
+        <button
+          onClick={cerrarSesion}
+          className="-ml-2 rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
           title="Cerrar sesión"
           aria-label="Cerrar sesión"
         >
           <LogOut className="size-4" />
         </button>
       </div>
+      {cambiandoClave && <ModalMiClave alCerrar={() => setCambiandoClave(false)} />}
     </div>
   )
 

@@ -15,6 +15,7 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 - **PDF de la orden** y **envío por mail** al proveedor con el PDF adjunto, con historial de envíos
 - **Entregas parciales:** cada ingreso de mercadería se registra con su remito y el estado de cada ítem se calcula solo (en espera, parcial, completa, excedida)
 - **Catálogo por proveedor:** cada proveedor ofrece ciertas combinaciones tipo / gramaje / formato, que alimentan combos en cascada al cargar una orden
+- **Administración de usuarios:** alta, edición, baja, restablecer contraseña, cambio de rol y **permisos extra por usuario** además de los de su rol. Cada usuario puede cambiar su propia contraseña
 - **Roles y permisos granulares:** cada usuario ve y puede hacer solo lo que su rol permite (administrador, comprador, depósito, consulta)
 - **Tablero** con indicadores y entregas pendientes, y **reportes** de kilos recibidos por proveedor, tipo de producto y mes
 - Interfaz **responsive**: funciona en celular
@@ -23,6 +24,7 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 |---|---|
 | ![Detalle de orden con ingreso parcial](docs/capturas/orden-detalle.png) | ![Nueva orden con combos en cascada](docs/capturas/nueva-orden.png) |
 | ![Reportes](docs/capturas/reportes.png) | ![Envío de la orden por mail con el PDF adjunto](docs/capturas/envio-mail.png) |
+| ![Administración de usuarios y permisos](docs/capturas/usuarios.png) | ![Login con usuarios demo](docs/capturas/login.png) |
 
 ## Stack
 
@@ -42,6 +44,7 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 - **Reglas de negocio puras** (`ReglasOrden`) separadas del acceso a datos y cubiertas con tests unitarios.
 - **Protección ante cambios concurrentes**: los `UPDATE` verifican el estado esperado (`WHERE Estado = 'ABIERTA'`), así un usuario no puede, por ejemplo, registrar un ingreso en una orden que otro acaba de cerrar.
 - **Permisos en el JWT** y un atributo `[RequierePermiso(...)]` por endpoint; todo endpoint exige sesión salvo que se indique lo contrario.
+- **Bajas con efecto inmediato:** además de validar el token, cada pedido verifica que el usuario siga activo (con caché de 30 s que se invalida al darlo de baja). El sistema **nunca queda sin un administrador activo**: la regla se valida en el servicio y también en el `UPDATE`, para que dos administradores no puedan sacarse mutuamente al mismo tiempo.
 - **Envío de mails desacoplado** (`IEnvioCorreo`): en producción sale por SMTP; en desarrollo se guarda como `.eml` en una carpeta y no se envía, así se puede probar todo el flujo sin una casilla real.
 - Errores en formato estándar **ProblemDetails** (RFC 9457) con mensajes en español, login con **rate limiting** y documentación **OpenAPI** interactiva.
 
@@ -147,7 +150,7 @@ cd src/frontend; npm run build; npm run lint   # tipos, build y linter del front
 
 ## Próximos pasos
 
-- [ ] Administración de usuarios, roles y permisos desde la interfaz
+- [ ] Editar los permisos de cada rol desde la interfaz (hoy se editan los permisos extra por usuario)
 - [ ] Tests de integración de la API y tests end-to-end del frontend
 
 ## Documentación

@@ -7,6 +7,7 @@ using CompraTrack.Api.Features.Ordenes;
 using CompraTrack.Api.Features.Proveedores;
 using CompraTrack.Api.Features.Recepciones;
 using CompraTrack.Api.Features.Reportes;
+using CompraTrack.Api.Features.Usuarios;
 using CompraTrack.Api.Infrastructure;
 using CompraTrack.Api.Infrastructure.Auth;
 using CompraTrack.Api.Infrastructure.Correo;
@@ -36,6 +37,10 @@ builder.Services.AddScoped<RecepcionRepository>();
 builder.Services.AddScoped<RecepcionService>();
 builder.Services.AddScoped<ReporteRepository>();
 builder.Services.AddScoped<DocumentoOrdenService>();
+builder.Services.AddScoped<UsuarioRepository>();
+builder.Services.AddScoped<UsuarioService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<VerificadorUsuarioActivo>();
 
 // ---------- PDF y correo ----------
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
@@ -74,6 +79,16 @@ builder.Services
             NameClaimType = JwtRegisteredClaimNames.UniqueName,
             RoleClaimType = ClaimTypes.Role,
             ClockSkew = TimeSpan.FromMinutes(1)
+        };
+        // Un token válido no alcanza: el usuario tiene que seguir activo (una baja corta la sesión al instante).
+        o.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                var verificador = ctx.HttpContext.RequestServices.GetRequiredService<VerificadorUsuarioActivo>();
+                if (ctx.Principal is null || !await verificador.EstaActivoAsync(ctx.Principal.ObtenerUsuarioId(), ctx.HttpContext.RequestAborted))
+                    ctx.Fail("El usuario fue dado de baja.");
+            }
         };
     });
 

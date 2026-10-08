@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './cliente'
 import type {
-  ActualizarOrden, BorradorEnvio, EnviarOrden, ResultadoEnvio, CrearOrden, FiltroOrdenes, Formato, Gramaje, GuardarProveedor, ItemNuevo, KilosPorGrupo,
+  ActualizarOrden, BorradorEnvio, CrearUsuario, EnviarOrden, PermisoInfo, ResultadoEnvio, Rol, UsuarioDetalle, UsuarioResumen, CrearOrden, FiltroOrdenes, Formato, Gramaje, GuardarProveedor, ItemNuevo, KilosPorGrupo,
   KilosPorMes, Opcion, OrdenDetalle, OrdenResumen, Pendiente, Proveedor, ProveedorProducto, Recepcion,
   RegistrarRecepcion, ResultadoPaginado, Resumen, TipoProducto,
 } from './tipos'
@@ -245,3 +245,51 @@ export const useKilosPorMes = (anio: number) =>
 
 export const useAniosReportes = () =>
   useQuery({ queryKey: [...claves.reportes, 'anios'], queryFn: () => api<number[]>('/api/reportes/anios') })
+
+// ---------- Usuarios ----------
+
+const clavesUsuarios = ['usuarios'] as const
+
+export const useUsuarios = (filtro: { buscar?: string; rolId?: number | ''; activo?: boolean }) =>
+  useQuery({
+    queryKey: [...clavesUsuarios, 'lista', filtro],
+    queryFn: () => api<UsuarioResumen[]>('/api/usuarios', { parametros: filtro }),
+    placeholderData: keepPreviousData,
+  })
+
+export const useUsuario = (id: number) =>
+  useQuery({ queryKey: [...clavesUsuarios, id], queryFn: () => api<UsuarioDetalle>(`/api/usuarios/${id}`) })
+
+export const useRoles = () =>
+  useQuery({ queryKey: [...clavesUsuarios, 'roles'], queryFn: () => api<Rol[]>('/api/roles'), staleTime: DIEZ_MINUTOS })
+
+export const usePermisos = () =>
+  useQuery({ queryKey: [...clavesUsuarios, 'permisos'], queryFn: () => api<PermisoInfo[]>('/api/permisos'), staleTime: DIEZ_MINUTOS })
+
+function useMutacionUsuarios<TDatos, TResultado>(fn: (datos: TDatos) => Promise<TResultado>) {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: clavesUsuarios }) })
+}
+
+export const useCrearUsuario = () =>
+  useMutacionUsuarios((datos: CrearUsuario) => api<UsuarioDetalle>('/api/usuarios', { metodo: 'POST', cuerpo: datos }))
+
+export const useActualizarUsuario = (id: number) =>
+  useMutacionUsuarios((datos: { nombreCompleto: string; email: string; rolId: number }) =>
+    api<UsuarioDetalle>(`/api/usuarios/${id}`, { metodo: 'PUT', cuerpo: datos }))
+
+export const useCambiarEstadoUsuario = (id: number) =>
+  useMutacionUsuarios((activo: boolean) => api<UsuarioDetalle>(`/api/usuarios/${id}/estado`, { metodo: 'PATCH', cuerpo: { activo } }))
+
+export const useRestablecerClave = (id: number) =>
+  useMutacionUsuarios((nuevaClave: string) => api<void>(`/api/usuarios/${id}/clave`, { metodo: 'POST', cuerpo: { nuevaClave } }))
+
+export const useGuardarPermisosExtra = (id: number) =>
+  useMutacionUsuarios((permisoIds: number[]) => api<UsuarioDetalle>(`/api/usuarios/${id}/permisos`, { metodo: 'PUT', cuerpo: { permisoIds } }))
+
+/** El usuario logueado cambia su propia contraseña. */
+export const useCambiarMiClave = () =>
+  useMutation({
+    mutationFn: (datos: { claveActual: string; claveNueva: string }) =>
+      api<void>('/api/auth/cambiar-clave', { metodo: 'POST', cuerpo: datos }),
+  })

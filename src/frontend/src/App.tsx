@@ -15,6 +15,8 @@ const Recepciones = lazy(() => import('@/pages/Recepciones').then((m) => ({ defa
 const Proveedores = lazy(() => import('@/pages/Proveedores').then((m) => ({ default: m.Proveedores })))
 const ProveedorDetalle = lazy(() => import('@/pages/ProveedorDetalle').then((m) => ({ default: m.ProveedorDetalle })))
 const Reportes = lazy(() => import('@/pages/Reportes').then((m) => ({ default: m.Reportes })))
+const Usuarios = lazy(() => import('@/pages/Usuarios').then((m) => ({ default: m.Usuarios })))
+const UsuarioDetalle = lazy(() => import('@/pages/UsuarioDetalle').then((m) => ({ default: m.UsuarioDetalle })))
 
 /** Pantalla protegida por permiso, con indicador de carga mientras se descarga su código. */
 function Pantalla({ permiso, children }: { permiso: Permiso; children: ReactNode }) {
@@ -39,6 +41,8 @@ export default function App() {
           <Route path="proveedores" element={<Pantalla permiso={PERMISOS.proveedoresVer}><Proveedores /></Pantalla>} />
           <Route path="proveedores/:id" element={<Pantalla permiso={PERMISOS.proveedoresVer}><ProveedorDetalle /></Pantalla>} />
           <Route path="reportes" element={<Pantalla permiso={PERMISOS.reportesVer}><Reportes /></Pantalla>} />
+          <Route path="usuarios" element={<Pantalla permiso={PERMISOS.usuariosGestionar}><Usuarios /></Pantalla>} />
+          <Route path="usuarios/:id" element={<Pantalla permiso={PERMISOS.usuariosGestionar}><UsuarioDetalle /></Pantalla>} />
           <Route path="*" element={<NoEncontrado />} />
         </Route>
       </Routes>

@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using CompraTrack.Api.Features.Usuarios;
 using CompraTrack.Api.Infrastructure.Auth;
+using CompraTrack.Api.Infrastructure.Errors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,6 +16,10 @@ public sealed record UsuarioSesion(
     int Id, string NombreUsuario, string NombreCompleto, string Email, string Rol, IReadOnlyList<string> Permisos);
 
 public sealed record LoginResponse(string Token, DateTimeOffset Expira, UsuarioSesion Usuario);
+
+public sealed record CambiarClaveRequest(
+    [Required, StringLength(100)] string ClaveActual,
+    [Required, StringLength(100)] string ClaveNueva);
 
 [ApiController]
 [Route("api/auth")]
@@ -57,6 +63,26 @@ public sealed class AuthController(AuthRepository repo, TokenService tokens) : C
 
         var permisos = await repo.ObtenerPermisosEfectivosAsync(usuario.Id, ct);
         return ASesion(usuario, permisos);
+    }
+
+    /// <summary>El usuario cambia su propia contraseña. Pide la actual, por si alguien encuentra una sesión abierta.</summary>
+    [HttpPost("cambiar-clave")]
+    [Authorize]
+    [EnableRateLimiting("login")]
+    public async Task<IActionResult> CambiarClave(CambiarClaveRequest request, [FromServices] UsuarioRepository usuarios, CancellationToken ct)
+    {
+        var usuario = await repo.ObtenerPorIdAsync(User.ObtenerUsuarioId(), ct);
+        if (usuario is null || !usuario.Activo)
+            return Unauthorized();
+
+        if (!BCrypt.Net.BCrypt.Verify(request.ClaveActual, usuario.ClaveHash))
+            throw new ReglaNegocioException("La contraseña actual no es correcta.");
+        if (request.ClaveNueva == request.ClaveActual)
+            throw new ReglaNegocioException("La contraseña nueva tiene que ser distinta de la actual.");
+        ReglasUsuario.ValidarClave(request.ClaveNueva);
+
+        await usuarios.CambiarClaveAsync(usuario.Id, UsuarioService.Hashear(request.ClaveNueva), ct);
+        return NoContent();
     }
 
     private static UsuarioSesion ASesion(UsuarioCredenciales u, IReadOnlyList<string> permisos) =>

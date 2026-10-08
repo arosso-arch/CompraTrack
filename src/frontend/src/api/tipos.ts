@@ -16,6 +16,7 @@ export const PERMISOS = {
   productosVer: 'productos.ver',
   productosGestionar: 'productos.gestionar',
   reportesVer: 'reportes.ver',
+  usuariosGestionar: 'usuarios.gestionar',
 } as const
 export type Permiso = (typeof PERMISOS)[keyof typeof PERMISOS]
 
@@ -277,4 +278,51 @@ export interface KilosPorMes {
   mes: number
   tipo: string
   kgRecibidos: number
+}
+
+// ---------- Usuarios ----------
+
+export interface UsuarioResumen {
+  id: number
+  nombreUsuario: string
+  nombreCompleto: string
+  email: string
+  rolId: number
+  rol: string
+  esAdministrador: boolean
+  activo: boolean
+  fechaAlta: string
+  ultimoAcceso: string | null
+  permisosExtra: number
+}
+
+export interface UsuarioDetalle extends Omit<UsuarioResumen, 'permisosExtra'> {
+  /** Permisos que trae el rol (todos, si es administrador). */
+  permisosRol: number[]
+  /** Permisos otorgados además de los del rol. */
+  permisosExtra: number[]
+}
+
+export interface Rol {
+  id: number
+  nombre: string
+  descripcion: string | null
+  esAdministrador: boolean
+  usuarios: number
+  permisos: number[]
+}
+
+export interface PermisoInfo {
+  id: number
+  codigo: string
+  modulo: string
+  descripcion: string
+}
+
+export interface CrearUsuario {
+  nombreUsuario: string
+  nombreCompleto: string
+  email: string
+  rolId: number
+  clave: string
 }

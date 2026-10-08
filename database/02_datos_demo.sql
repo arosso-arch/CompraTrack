@@ -74,6 +74,13 @@ DECLARE @idDeposito INT = (SELECT Id FROM dbo.Usuario WHERE NombreUsuario = 'dep
 INSERT INTO dbo.UsuarioPermiso (UsuarioId, PermisoId, OtorgadoPorId)
 SELECT @idDeposito, Id, @idAdmin FROM dbo.Permiso WHERE Codigo = 'reportes.ver';
 
+-- Últimos accesos realistas (el usuario "consulta" queda sin ingresos, como ejemplo).
+UPDATE dbo.Usuario
+SET UltimoAcceso = DATEADD(MINUTE, -(Id * 173), SYSDATETIME()),
+    FechaAlta    = DATEADD(DAY, -620 + Id * 15, SYSDATETIME())
+WHERE NombreUsuario <> 'consulta';
+UPDATE dbo.Usuario SET FechaAlta = DATEADD(DAY, -45, SYSDATETIME()) WHERE NombreUsuario = 'consulta';
+
 ------------------------------------------------------------
 -- 3) Proveedores ficticios (dominios .example reservados)
 ------------------------------------------------------------
