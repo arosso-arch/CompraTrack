@@ -491,7 +491,6 @@ dist/
 .env
 .env.*
 !.env.example
-appsettings.Development.json
 appsettings.*.local.json
 *.pfx
 
