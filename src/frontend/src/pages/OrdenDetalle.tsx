@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Ban, CheckCircle2, ChevronDown, ChevronUp, History, Lock, Pencil, Plus, RotateCcw, Trash2, Truck } from 'lucide-react'
+import { ArrowLeft, Ban, CheckCircle2, ChevronDown, ChevronUp, History, Lock, Pencil, Plus, RotateCcw, Send, Trash2, Truck } from 'lucide-react'
 import {
   useActualizarOrden, useAgregarItem, useAnularRecepcion, useCambiarEstadoOrden, useOrden, useQuitarItem,
   useRecepcionesItem, useRegistrarRecepcion,
@@ -14,6 +14,7 @@ import {
   BarraProgreso, Boton, Campo, EncabezadoPagina, Input, InsigniaEstadoEntrega, InsigniaEstadoOrden, Modal, Tarjeta, Textarea,
 } from '@/components/ui'
 import { Cargando, MensajeError } from '@/components/Estados'
+import { AvisoEnvio, BotonPdf, ModalEnviarOrden, TarjetaEnvios } from '@/components/EnvioOrden'
 import { SelectorProducto } from '@/components/SelectorProducto'
 import { cx } from '@/lib/cx'
 import { aNumeroOVacio, esquemaItem, numeroRequerido } from '@/lib/esquemas'
@@ -49,6 +50,8 @@ export function OrdenDetalle() {
   const [accion, setAccion] = useState<AccionEstado | null>(null)
   const [editando, setEditando] = useState(false)
   const [agregandoItem, setAgregandoItem] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [resultadoEnvio, setResultadoEnvio] = useState<{ mensaje: string; envioReal: boolean } | null>(null)
 
   if (orden.isPending) return <Cargando />
   if (orden.isError) return <MensajeError error={orden.error} />
@@ -62,6 +65,7 @@ export function OrdenDetalle() {
     anular: abierta && tienePermiso(PERMISOS.ordenesCerrar),
     recibir: abierta && tienePermiso(PERMISOS.recepcionesRegistrar),
     anularRecepcion: abierta && tienePermiso(PERMISOS.recepcionesAnular),
+    enviar: o.estado !== 'ANULADA' && tienePermiso(PERMISOS.ordenesEnviar),
   }
 
   return (
@@ -74,6 +78,8 @@ export function OrdenDetalle() {
         titulo={<span className="flex items-center gap-3">Orden {o.numero} <InsigniaEstadoOrden estado={o.estado} /></span>}
         subtitulo={`${o.proveedor} · ${formatoFecha(o.fecha)}`}
         acciones={<>
+          <BotonPdf orden={o} />
+          {puede.enviar && <Boton variante="secundario" icono={<Send className="size-4" />} onClick={() => setEnviando(true)}>Enviar</Boton>}
           {puede.editar && <Boton variante="secundario" icono={<Pencil className="size-4" />} onClick={() => setEditando(true)}>Editar</Boton>}
           {puede.anular && <Boton variante="peligro" icono={<Ban className="size-4" />} onClick={() => setAccion('anular')}>Anular</Boton>}
           {puede.reabrir && <Boton variante="secundario" icono={<RotateCcw className="size-4" />} onClick={() => setAccion('reabrir')}>Reabrir</Boton>}
@@ -86,6 +92,7 @@ export function OrdenDetalle() {
           <CheckCircle2 className="size-4" /> {aviso}
         </div>
       )}
+      {resultadoEnvio && <AvisoEnvio {...resultadoEnvio} alCerrar={() => setResultadoEnvio(null)} />}
 
       <div className="grid items-start gap-6 lg:grid-cols-3">
         <Tarjeta titulo="Datos de la orden" className="lg:col-span-2">
@@ -98,14 +105,17 @@ export function OrdenDetalle() {
           </dl>
         </Tarjeta>
 
-        <Tarjeta titulo="Proveedor">
-          <dl className="space-y-3 text-sm">
-            <Dato etiqueta="Razón social">{o.proveedor}</Dato>
-            <Dato etiqueta="Contacto">{o.proveedorContacto ?? '—'}</Dato>
-            <Dato etiqueta="Email">{o.proveedorEmail ? <a className="text-marca-700 hover:underline" href={`mailto:${o.proveedorEmail}`}>{o.proveedorEmail}</a> : '—'}</Dato>
-            <Dato etiqueta="Teléfono">{o.proveedorTelefono ?? '—'}</Dato>
-          </dl>
-        </Tarjeta>
+        <div className="grid min-w-0 gap-6">
+          <Tarjeta titulo="Proveedor">
+            <dl className="space-y-3 text-sm">
+              <Dato etiqueta="Razón social">{o.proveedor}</Dato>
+              <Dato etiqueta="Contacto">{o.proveedorContacto ?? '—'}</Dato>
+              <Dato etiqueta="Email">{o.proveedorEmail ? <a className="text-marca-700 hover:underline" href={`mailto:${o.proveedorEmail}`}>{o.proveedorEmail}</a> : '—'}</Dato>
+              <Dato etiqueta="Teléfono">{o.proveedorTelefono ?? '—'}</Dato>
+            </dl>
+          </Tarjeta>
+          <TarjetaEnvios orden={o} />
+        </div>
       </div>
 
       <Tarjeta
@@ -134,6 +144,10 @@ export function OrdenDetalle() {
       )}
 
       {editando && <ModalEditarOrden orden={o} alCerrar={() => setEditando(false)} />}
+      {enviando && (
+        <ModalEnviarOrden orden={o} alCerrar={() => setEnviando(false)}
+                          alEnviar={(mensaje, envioReal) => { setEnviando(false); setResultadoEnvio({ mensaje, envioReal }) }} />
+      )}
       {agregandoItem && <ModalAgregarItem orden={o} alCerrar={() => setAgregandoItem(false)} />}
     </>
   )

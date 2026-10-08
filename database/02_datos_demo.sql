@@ -181,7 +181,7 @@ SELECT
     CASE WHEN n.N % 7 = 0 THEN N'Entregar en depósito de 8 a 14 h.' END,
     o.Estado,
     @idCompras,
-    CAST(o.Fecha AS DATETIME2(0)),
+    DATEADD(MINUTE, 9 * 60 + (n.N * 37) % 420, CAST(o.Fecha AS DATETIME2(0))),   -- creada entre las 9 y las 16 h
     CASE WHEN o.Estado <> 'ABIERTA' THEN DATEADD(DAY, 35, CAST(o.Fecha AS DATETIME2(0))) END
 FROM Numeros n
 CROSS APPLY (SELECT DATEADD(DAY, -(600 - n.N * 10 - n.N % 4), @hoy) AS Fecha) f
@@ -280,6 +280,18 @@ SELECT
 FROM @Recepciones
 ORDER BY Fecha, ItemId;
 
+------------------------------------------------------------
+-- 8) Envíos por mail: cada orden no anulada se envió al proveedor el día de su creación
+------------------------------------------------------------
+
+INSERT INTO dbo.EnvioOrden (OrdenCompraId, Destinatario, Asunto, EnviadoPorId, FechaEnvio)
+SELECT o.Id, p.Email, N'Orden de compra N° ' + CAST(o.Numero AS NVARCHAR(10)), @idCompras,
+       DATEADD(MINUTE, 30, o.FechaCreacion)   -- media hora después de crearla
+FROM dbo.OrdenCompra o
+JOIN dbo.Proveedor p ON p.Id = o.ProveedorId
+WHERE o.Estado <> 'ANULADA' AND p.Email IS NOT NULL
+  AND DATEDIFF(DAY, o.Fecha, @hoy) > 2;   -- las más recientes quedan sin enviar, para probarlo en el demo
+
 COMMIT TRANSACTION;
 GO
 
@@ -291,5 +303,6 @@ UNION ALL SELECT 'Proveedores',        COUNT(*) FROM dbo.Proveedor
 UNION ALL SELECT 'ProveedorProducto',  COUNT(*) FROM dbo.ProveedorProducto
 UNION ALL SELECT 'Ordenes',            COUNT(*) FROM dbo.OrdenCompra
 UNION ALL SELECT 'Items',              COUNT(*) FROM dbo.OrdenCompraItem
-UNION ALL SELECT 'Recepciones',        COUNT(*) FROM dbo.Recepcion;
+UNION ALL SELECT 'Recepciones',        COUNT(*) FROM dbo.Recepcion
+UNION ALL SELECT 'Envios',             COUNT(*) FROM dbo.EnvioOrden;
 GO

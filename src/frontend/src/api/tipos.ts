@@ -8,6 +8,7 @@ export const PERMISOS = {
   ordenesCrear: 'ordenes.crear',
   ordenesEditar: 'ordenes.editar',
   ordenesCerrar: 'ordenes.cerrar',
+  ordenesEnviar: 'ordenes.enviar',
   recepcionesRegistrar: 'recepciones.registrar',
   recepcionesAnular: 'recepciones.anular',
   proveedoresVer: 'proveedores.ver',
@@ -150,8 +151,36 @@ export interface OrdenDetalle {
   fechaCreacion: string
   fechaCierre: string | null
   items: OrdenItem[]
+  envios: EnvioOrden[]
   totalPedidoKg: number
   totalRecibidoKg: number
+}
+
+export interface EnvioOrden {
+  id: number
+  destinatario: string
+  asunto: string
+  enviadoPor: string
+  fechaEnvio: string
+}
+
+export interface BorradorEnvio {
+  destinatario: string | null
+  asunto: string
+  mensaje: string
+}
+
+export interface EnviarOrden {
+  destinatario: string
+  asunto: string | null
+  mensaje: string | null
+}
+
+export interface ResultadoEnvio {
+  /** false en modo demostración: el mail se generó pero no se envió. */
+  envioReal: boolean
+  mensaje: string
+  orden: OrdenDetalle
 }
 
 export interface FiltroOrdenes {

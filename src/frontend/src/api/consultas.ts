@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './cliente'
 import type {
-  ActualizarOrden, CrearOrden, FiltroOrdenes, Formato, Gramaje, GuardarProveedor, ItemNuevo, KilosPorGrupo,
+  ActualizarOrden, BorradorEnvio, EnviarOrden, ResultadoEnvio, CrearOrden, FiltroOrdenes, Formato, Gramaje, GuardarProveedor, ItemNuevo, KilosPorGrupo,
   KilosPorMes, Opcion, OrdenDetalle, OrdenResumen, Pendiente, Proveedor, ProveedorProducto, Recepcion,
   RegistrarRecepcion, ResultadoPaginado, Resumen, TipoProducto,
 } from './tipos'
@@ -75,6 +75,24 @@ export function useQuitarItem(ordenId: number) {
   const invalidar = useInvalidarOrdenes()
   return useMutation({
     mutationFn: (itemId: number) => api<OrdenDetalle>(`/api/ordenes/${ordenId}/items/${itemId}`, { metodo: 'DELETE' }),
+    onSuccess: invalidar,
+  })
+}
+
+// ---------- PDF y envío por mail ----------
+
+export const useBorradorEnvio = (ordenId: number, habilitado: boolean) =>
+  useQuery({
+    queryKey: [...claves.orden(ordenId), 'borrador-envio'],
+    queryFn: () => api<BorradorEnvio>(`/api/ordenes/${ordenId}/envio/borrador`),
+    enabled: habilitado,
+    staleTime: 0,
+  })
+
+export function useEnviarOrden(ordenId: number) {
+  const invalidar = useInvalidarOrdenes()
+  return useMutation({
+    mutationFn: (datos: EnviarOrden) => api<ResultadoEnvio>(`/api/ordenes/${ordenId}/enviar`, { metodo: 'POST', cuerpo: datos }),
     onSuccess: invalidar,
   })
 }

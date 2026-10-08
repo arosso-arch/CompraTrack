@@ -48,6 +48,13 @@ public static class ReglasOrden
             throw new ReglaNegocioException("La orden ya tiene mercadería recibida: no se puede anular, solo cerrar.");
     }
 
+    /// <summary>Se pueden enviar órdenes abiertas o cerradas (por ejemplo, para reenviar una copia), nunca anuladas.</summary>
+    public static void AsegurarPuedeEnviar(string estado)
+    {
+        if (estado == EstadoOrden.Anulada)
+            throw new ReglaNegocioException("La orden está anulada: no se puede enviar al proveedor.");
+    }
+
     public static void AsegurarPuedeQuitarItem(string estadoOrden, bool itemTieneRecepciones, int itemsActivos)
     {
         AsegurarEditable(estadoOrden);

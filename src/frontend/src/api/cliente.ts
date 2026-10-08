@@ -38,6 +38,34 @@ interface Opciones {
   parametros?: Parametros
 }
 
+/**
+ * Descarga un archivo protegido (ej.: el PDF de una orden).
+ * Un <a href> común no sirve porque no manda el token: se pide con fetch y se guarda desde un Blob.
+ */
+export async function descargarArchivo(ruta: string, nombrePorDefecto: string) {
+  const token = obtenerToken()
+  let respuesta: Response
+  try {
+    respuesta = await fetch(URL_BASE + ruta, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  } catch {
+    throw new ApiError(0, 'Sin conexión', 'No se pudo conectar con el servidor.')
+  }
+  if (respuesta.status === 401 && token) alExpirarSesion()
+  if (!respuesta.ok) {
+    const problema = await respuesta.json().catch(() => null)
+    throw new ApiError(respuesta.status, problema?.title ?? `Error ${respuesta.status}`, problema?.detail)
+  }
+
+  // El nombre sale del header Content-Disposition que manda la API (ej.: OC-1061.pdf).
+  const nombre = respuesta.headers.get('Content-Disposition')?.match(/filename="?([^";]+)"?/)?.[1] ?? nombrePorDefecto
+  const url = URL.createObjectURL(await respuesta.blob())
+  const enlace = Object.assign(document.createElement('a'), { href: url, download: nombre })
+  document.body.append(enlace)
+  enlace.click()
+  enlace.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 export async function api<T>(ruta: string, { metodo = 'GET', cuerpo, parametros }: Opciones = {}): Promise<T> {
   const url = new URL(URL_BASE + ruta, window.location.origin)
   for (const [clave, valor] of Object.entries(parametros ?? {})) {

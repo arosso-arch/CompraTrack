@@ -192,6 +192,19 @@ CREATE TABLE dbo.Recepcion
 
 CREATE INDEX IX_Recepcion_Item  ON dbo.Recepcion (OrdenCompraItemId) INCLUDE (CantidadKg, Activo);
 CREATE INDEX IX_Recepcion_Fecha ON dbo.Recepcion (Fecha) INCLUDE (CantidadKg, Activo);
+
+-- Historial de envíos de la orden por mail al proveedor.
+CREATE TABLE dbo.EnvioOrden
+(
+    Id            INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_EnvioOrden PRIMARY KEY,
+    OrdenCompraId INT NOT NULL CONSTRAINT FK_EnvioOrden_Orden REFERENCES dbo.OrdenCompra(Id),
+    Destinatario  VARCHAR(150)  NOT NULL,
+    Asunto        NVARCHAR(200) NOT NULL,
+    EnviadoPorId  INT NOT NULL CONSTRAINT FK_EnvioOrden_EnviadoPor REFERENCES dbo.Usuario(Id),
+    FechaEnvio    DATETIME2(0) NOT NULL CONSTRAINT DF_EnvioOrden_FechaEnvio DEFAULT (SYSDATETIME())
+);
+
+CREATE INDEX IX_EnvioOrden_Orden ON dbo.EnvioOrden (OrdenCompraId);
 GO
 
 ------------------------------------------------------------

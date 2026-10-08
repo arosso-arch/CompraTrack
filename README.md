@@ -10,6 +10,7 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 ## Funcionalidades
 
 - **Órdenes de compra** con numeración correlativa, ítems, cierre, reapertura y anulación
+- **PDF de la orden** y **envío por mail** al proveedor con el PDF adjunto, con historial de envíos
 - **Entregas parciales:** cada ingreso de mercadería se registra con su remito y el estado de cada ítem se calcula solo (en espera, parcial, completa, excedida)
 - **Catálogo por proveedor:** cada proveedor ofrece ciertas combinaciones tipo / gramaje / formato, que alimentan combos en cascada al cargar una orden
 - **Roles y permisos granulares:** cada usuario ve y puede hacer solo lo que su rol permite (administrador, comprador, depósito, consulta)
@@ -19,14 +20,14 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 | | |
 |---|---|
 | ![Detalle de orden con ingreso parcial](docs/capturas/orden-detalle.png) | ![Nueva orden con combos en cascada](docs/capturas/nueva-orden.png) |
-| ![Reportes](docs/capturas/reportes.png) | ![Login con usuarios demo](docs/capturas/login.png) |
+| ![Reportes](docs/capturas/reportes.png) | ![Envío de la orden por mail con el PDF adjunto](docs/capturas/envio-mail.png) |
 
 ## Stack
 
 | Capa | Tecnología |
 |---|---|
 | Frontend | React 19 · TypeScript · Vite · TanStack Query · React Router · React Hook Form + Zod · Tailwind CSS · Recharts |
-| Backend | ASP.NET Core Web API · .NET 10 · Dapper · JWT · BCrypt |
+| Backend | ASP.NET Core Web API · .NET 10 · Dapper · JWT · BCrypt · QuestPDF · MailKit |
 | Base de datos | SQL Server (LocalDB en desarrollo) |
 | Tests | xUnit |
 
@@ -38,6 +39,7 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 - **Reglas de negocio puras** (`ReglasOrden`) separadas del acceso a datos y cubiertas con tests unitarios.
 - **Protección ante cambios concurrentes**: los `UPDATE` verifican el estado esperado (`WHERE Estado = 'ABIERTA'`), así un usuario no puede, por ejemplo, registrar un ingreso en una orden que otro acaba de cerrar.
 - **Permisos en el JWT** y un atributo `[RequierePermiso(...)]` por endpoint; todo endpoint exige sesión salvo que se indique lo contrario.
+- **Envío de mails desacoplado** (`IEnvioCorreo`): en producción sale por SMTP; en desarrollo y en el demo público se guarda como `.eml` y no se envía, para que nadie pueda usar el demo para mandar correos.
 - Errores en formato estándar **ProblemDetails** (RFC 9457) con mensajes en español, login con **rate limiting** y documentación **OpenAPI** interactiva.
 
 **Frontend**
@@ -75,6 +77,23 @@ Todos con la clave `Demo1234!`. La pantalla de login tiene accesos rápidos para
 | `deposito` | Depósito | Registrar y anular ingresos de mercadería |
 | `consulta` | Consulta | Solo lectura |
 
+### Envío de mails
+
+Por defecto (`Correo:Modo = Carpeta`) los mails **no se envían**: se guardan como `.eml` en `src/backend/CompraTrack.Api/correos-enviados/` y se pueden abrir con Outlook o Thunderbird.
+
+Para enviarlos de verdad, configurar SMTP **sin escribir la clave en el repositorio**:
+
+```powershell
+cd src/backend/CompraTrack.Api
+dotnet user-secrets init
+dotnet user-secrets set "Correo:Modo" "Smtp"
+dotnet user-secrets set "Correo:Smtp:Servidor" "smtp.gmail.com"
+dotnet user-secrets set "Correo:Smtp:Usuario" "tu-cuenta@gmail.com"
+dotnet user-secrets set "Correo:Smtp:Clave" "contraseña-de-aplicación"
+```
+
+En producción se usan variables de entorno (`Correo__Smtp__Clave`, etc.). Los datos de la empresa que aparecen en el PDF se configuran en la sección `Empresa` de `appsettings.json`.
+
 ### Tests y verificación
 
 ```powershell
@@ -97,7 +116,6 @@ cd src/frontend; npm run build; npm run lint   # tipos, build y linter del front
 
 ## Próximos pasos
 
-- [ ] PDF de la orden de compra y envío por mail al proveedor
 - [ ] Administración de usuarios, roles y permisos desde la interfaz
 - [ ] Tests de integración de la API y tests end-to-end del frontend
 - [ ] Integración continua con GitHub Actions

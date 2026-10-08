@@ -21,6 +21,8 @@ erDiagram
     Formato ||--o{ OrdenCompraItem : ""
     OrdenCompraItem ||--o{ Recepcion : "se recibe en"
     Usuario ||--o{ Recepcion : "registra"
+    OrdenCompra ||--o{ EnvioOrden : "se envía"
+    Usuario ||--o{ EnvioOrden : "envía"
 
     OrdenCompra {
         int Id PK
@@ -59,4 +61,5 @@ erDiagram
   `EN ESPERA` → `ENTREGA PARCIAL` → `ENTREGA COMPLETA`, o `CANTIDAD SUPERADA` si se recibió de más.
 - **Numeración** de órdenes con una `SEQUENCE`: nunca se reutiliza un número, aunque la orden se anule.
 - **Bajas lógicas** (`Activo = 0`) en ítems y recepciones, para conservar el historial.
+- **Historial de envíos** (`EnvioOrden`): cada envío de la orden por mail queda registrado con destinatario, fecha y usuario.
 - `ProveedorProducto` define qué combinaciones tipo / gramaje / formato ofrece cada proveedor y alimenta los combos en cascada al cargar una orden.

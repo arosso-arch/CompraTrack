@@ -497,3 +497,6 @@ appsettings.*.local.json
 # --- SO / editores ---
 .DS_Store
 Thumbs.db
+
+# Mails generados en modo Carpeta
+correos-enviados/

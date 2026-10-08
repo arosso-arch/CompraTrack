@@ -82,6 +82,12 @@ public sealed class OrdenRepository(IDbConnectionFactory db)
             JOIN dbo.Formato      f ON f.Id = i.FormatoId
             WHERE i.OrdenCompraId = @id
             ORDER BY i.Id;
+
+            SELECT e.Id, e.Destinatario, e.Asunto, u.NombreCompleto AS EnviadoPor, e.FechaEnvio
+            FROM dbo.EnvioOrden e
+            JOIN dbo.Usuario u ON u.Id = e.EnviadoPorId
+            WHERE e.OrdenCompraId = @id
+            ORDER BY e.FechaEnvio DESC, e.Id DESC;
             """;
 
         await using var cn = await db.AbrirAsync(ct);
@@ -89,7 +95,17 @@ public sealed class OrdenRepository(IDbConnectionFactory db)
         var orden = await multi.ReadSingleOrDefaultAsync<OrdenDetalleDto>()
                     ?? throw new NoEncontradoException($"No existe la orden {id}.");
         orden.Items = (await multi.ReadAsync<OrdenItemDto>()).AsList();
+        orden.Envios = (await multi.ReadAsync<EnvioOrdenDto>()).AsList();
         return orden;
+    }
+
+    public async Task RegistrarEnvioAsync(int ordenId, string destinatario, string asunto, int usuarioId, CancellationToken ct)
+    {
+        await using var cn = await db.AbrirAsync(ct);
+        await cn.ExecuteAsync(new CommandDefinition("""
+            INSERT INTO dbo.EnvioOrden (OrdenCompraId, Destinatario, Asunto, EnviadoPorId)
+            VALUES (@ordenId, @destinatario, @asunto, @usuarioId);
+            """, new { ordenId, destinatario, asunto, usuarioId }, cancellationToken: ct));
     }
 
     public async Task<OrdenEstadoDto> ObtenerEstadoAsync(int id, CancellationToken ct)

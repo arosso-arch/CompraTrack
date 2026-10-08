@@ -7,7 +7,9 @@ using CompraTrack.Api.Features.Ordenes;
 using CompraTrack.Api.Features.Proveedores;
 using CompraTrack.Api.Features.Recepciones;
 using CompraTrack.Api.Features.Reportes;
+using CompraTrack.Api.Infrastructure;
 using CompraTrack.Api.Infrastructure.Auth;
+using CompraTrack.Api.Infrastructure.Correo;
 using CompraTrack.Api.Infrastructure.Data;
 using CompraTrack.Api.Infrastructure.Errors;
 using Dapper;
@@ -32,6 +34,19 @@ builder.Services.AddScoped<OrdenService>();
 builder.Services.AddScoped<RecepcionRepository>();
 builder.Services.AddScoped<RecepcionService>();
 builder.Services.AddScoped<ReporteRepository>();
+builder.Services.AddScoped<DocumentoOrdenService>();
+
+// ---------- PDF y correo ----------
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+builder.Services.Configure<EmpresaOptions>(builder.Configuration.GetSection(EmpresaOptions.Seccion));
+builder.Services.AddOptions<CorreoOptions>()
+    .Bind(builder.Configuration.GetSection(CorreoOptions.Seccion))
+    .Validate(o => !o.EsSmtp || !string.IsNullOrWhiteSpace(o.Smtp.Servidor), "Correo:Smtp:Servidor es obligatorio en modo Smtp.")
+    .ValidateOnStart();
+
+var modoSmtp = builder.Configuration.GetSection(CorreoOptions.Seccion).Get<CorreoOptions>()?.EsSmtp ?? false;
+if (modoSmtp) builder.Services.AddSingleton<IEnvioCorreo, EnvioCorreoSmtp>();
+else builder.Services.AddSingleton<IEnvioCorreo, EnvioCorreoCarpeta>();
 
 // ---------- Autenticación JWT ----------
 builder.Services.AddOptions<JwtOptions>()

@@ -6,8 +6,35 @@ namespace CompraTrack.Api.Features.Ordenes;
 
 [ApiController]
 [Route("api/ordenes")]
-public sealed class OrdenesController(OrdenRepository repo, OrdenService service) : ControllerBase
+public sealed class OrdenesController(OrdenRepository repo, OrdenService service, DocumentoOrdenService documentos) : ControllerBase
 {
+    // ---------- PDF y envío por mail ----------
+
+    /// <summary>PDF de la orden de compra.</summary>
+    [HttpGet("{id:int}/pdf")]
+    [RequierePermiso(Permisos.OrdenesVer)]
+    [Produces("application/pdf")]
+    public async Task<IActionResult> Pdf(int id, CancellationToken ct)
+    {
+        var pdf = await documentos.GenerarPdfAsync(id, ct);
+        return File(pdf.Contenido, "application/pdf", pdf.NombreArchivo);
+    }
+
+    /// <summary>Destinatario, asunto y mensaje sugeridos para enviar la orden al proveedor.</summary>
+    [HttpGet("{id:int}/envio/borrador")]
+    [RequierePermiso(Permisos.OrdenesEnviar)]
+    public async Task<BorradorEnvio> BorradorEnvio(int id, CancellationToken ct)
+    {
+        var orden = await repo.ObtenerDetalleAsync(id, ct);
+        return new BorradorEnvio(orden.ProveedorEmail, documentos.AsuntoPorDefecto(orden), documentos.MensajePorDefecto(orden));
+    }
+
+    /// <summary>Envía la orden por mail con el PDF adjunto y registra el envío.</summary>
+    [HttpPost("{id:int}/enviar")]
+    [RequierePermiso(Permisos.OrdenesEnviar)]
+    public Task<ResultadoEnvio> Enviar(int id, EnviarOrdenRequest request, CancellationToken ct) =>
+        documentos.EnviarAsync(id, request, User.ObtenerUsuarioId(), ct);
+
     /// <summary>Lista paginada de órdenes con totales de kilos pedidos y recibidos.</summary>
     [HttpGet]
     [RequierePermiso(Permisos.OrdenesVer)]

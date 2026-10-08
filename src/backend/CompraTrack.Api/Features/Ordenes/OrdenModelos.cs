@@ -38,6 +38,7 @@ public sealed class OrdenDetalleDto
     public DateTime FechaCreacion { get; init; }
     public DateTime? FechaCierre { get; init; }
     public IReadOnlyList<OrdenItemDto> Items { get; set; } = [];
+    public IReadOnlyList<EnvioOrdenDto> Envios { get; set; } = [];
 
     public decimal TotalPedidoKg => Items.Sum(i => i.CantidadKg);
     public decimal TotalRecibidoKg => Items.Sum(i => i.RecibidoKg);
@@ -58,6 +59,15 @@ public sealed class OrdenItemDto
     public decimal DiferenciaKg { get; init; }
     /// <summary>EN ESPERA | ENTREGA PARCIAL | ENTREGA COMPLETA | CANTIDAD SUPERADA</summary>
     public string EstadoEntrega { get; init; } = "";
+}
+
+public sealed class EnvioOrdenDto
+{
+    public int Id { get; init; }
+    public string Destinatario { get; init; } = "";
+    public string Asunto { get; init; } = "";
+    public string EnviadoPor { get; init; } = "";
+    public DateTime FechaEnvio { get; init; }
 }
 
 /// <summary>Datos mínimos de una orden para validar reglas antes de modificarla.</summary>
@@ -106,6 +116,13 @@ public sealed record ActualizarOrdenRequest(
     [Required, StringLength(100, MinimumLength = 2)] string Concepto,
     [StringLength(100)] string? FormaPago,
     [StringLength(500)] string? Observaciones);
+
+public sealed record BorradorEnvio(string? Destinatario, string Asunto, string Mensaje);
+
+public sealed record EnviarOrdenRequest(
+    [Required, EmailAddress, StringLength(150)] string Destinatario,
+    [StringLength(200)] string? Asunto,
+    [StringLength(2000)] string? Mensaje);
 
 public sealed record ActualizarItemRequest(
     [StringLength(200)] string? Detalle,
