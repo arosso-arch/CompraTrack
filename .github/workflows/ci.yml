@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restaurar dependencias
+        run: dotnet restore
+
+      - name: Compilar
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Tests
+        run: dotnet test --no-build --configuration Release --logger "console;verbosity=normal"
+
+  frontend:
+    name: Frontend (React)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Linter
+        run: npm run lint
+
+      - name: Tipos y build de producción
+        run: npm run build
+
+  base-de-datos:
+    name: Scripts de base de datos (SQL Server)
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: Ci-Password-123   # contenedor efímero, solo existe durante este job
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Ci-Password-123' -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Crear esquema y cargar datos demo
+        env:
+          CONTENEDOR: ${{ job.services.sqlserver.id }}
+        run: |
+          docker cp database/. "$CONTENEDOR":/tmp/database
+          sqlcmd() { docker exec "$CONTENEDOR" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Ci-Password-123' -b -f 65001 "$@"; }
+          sqlcmd -i /tmp/database/01_esquema.sql
+          sqlcmd -d CompraTrack -i /tmp/database/02_datos_demo.sql
+
+      - name: Verificar los datos cargados
+        env:
+          CONTENEDOR: ${{ job.services.sqlserver.id }}
+        run: |
+          docker exec "$CONTENEDOR" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Ci-Password-123' -d CompraTrack -b -Q "
+            SET NOCOUNT ON;
+            IF (SELECT COUNT(*) FROM dbo.OrdenCompra) <> 60 THROW 50000, 'Se esperaban 60 órdenes', 1;
+            IF NOT EXISTS (SELECT 1 FROM dbo.vw_EstadoEntregaItem WHERE EstadoEntrega = 'ENTREGA PARCIAL') THROW 50000, 'Faltan entregas parciales', 1;
+            IF EXISTS (SELECT 1 FROM dbo.Recepcion WHERE Fecha > CAST(GETDATE() AS DATE)) THROW 50000, 'Hay recepciones con fecha futura', 1;
+            SELECT 'OK' AS Resultado;"

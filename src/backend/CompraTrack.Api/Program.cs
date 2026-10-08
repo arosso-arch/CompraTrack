@@ -52,6 +52,9 @@ else builder.Services.AddSingleton<IEnvioCorreo, EnvioCorreoCarpeta>();
 builder.Services.AddOptions<JwtOptions>()
     .Bind(builder.Configuration.GetSection(JwtOptions.Seccion))
     .Validate(o => o.Clave.Length >= 32, "Jwt:Clave debe tener al menos 32 caracteres.")
+    // La clave de desarrollo es pública (está en el repositorio): fuera de Development hay que configurar una propia.
+    .Validate(o => builder.Environment.IsDevelopment() || !o.Clave.StartsWith("SOLO-DESARROLLO", StringComparison.Ordinal),
+              "Jwt:Clave de desarrollo detectada fuera de Development: configurá una clave propia (variable de entorno Jwt__Clave).")
     .ValidateOnStart();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.Seccion).Get<JwtOptions>() ?? new JwtOptions();
