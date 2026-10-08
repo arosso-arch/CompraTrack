@@ -192,7 +192,8 @@ CROSS APPLY
                 WHEN n.N % 17 = 0                     THEN 'ANULADA'
                 ELSE                                       'CERRADA' END AS Estado
 ) o
-JOIN @Proveedores pr ON pr.N = (n.N * 5 + n.N / 3) % @cantProv
+-- 3 y la cantidad de proveedores (8) no tienen divisores comunes: el reparto recorre a todos.
+JOIN @Proveedores pr ON pr.N = (n.N * 3 + n.N / 8) % @cantProv
 JOIN @Concepto    c  ON c.N  = n.N % 6
 JOIN @FormaPago   fp ON fp.N = (n.N / 2) % 4
 ORDER BY n.N;   -- los números de orden quedan en orden cronológico
