@@ -30,7 +30,8 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 |---|---|
 | Frontend | React 19 · TypeScript · Vite · TanStack Query · React Router · React Hook Form + Zod · Tailwind CSS · Recharts |
 | Backend | ASP.NET Core Web API · .NET 10 · Dapper · JWT · BCrypt · QuestPDF · MailKit |
-| Base de datos | SQL Server (LocalDB en desarrollo) |
+| Base de datos | SQL Server 2022 (en Docker o LocalDB) |
+| Infraestructura | Docker Compose · Nginx · GitHub Actions |
 | Tests | xUnit |
 
 ### Decisiones técnicas
@@ -52,6 +53,33 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 - Gráficos con **paleta validada para daltonismo**: cada tipo de producto mantiene su color en todos los gráficos, con leyenda y vista en tabla.
 
 ## Cómo levantarlo
+
+### Opción 1 · Docker (recomendada: Windows, Mac o Linux)
+
+Solo necesitás [Docker Desktop](https://www.docker.com/products/docker-desktop/). No hace falta instalar .NET, Node ni SQL Server.
+
+```bash
+git clone https://github.com/arosso-arch/CompraTrack.git
+cd CompraTrack
+docker compose up --build
+```
+
+La primera vez tarda unos minutos (descarga las imágenes y compila). Cuando termina:
+
+- **App:** http://localhost:8080
+- **Documentación de la API:** http://localhost:5137/docs
+
+La base se crea sola con los datos de demostración y se conserva entre reinicios. Comandos útiles:
+
+```bash
+docker compose down              # detener (conserva los datos)
+docker compose down -v           # detener y borrar los datos: el próximo "up" vuelve a los datos de demostración
+docker compose cp api:/app/correos-enviados ./correos   # copiar los mails generados (.eml) para abrirlos
+```
+
+> En Mac con Apple Silicon (M1/M2/M3), SQL Server corre emulado: funciona, pero el primer arranque es más lento.
+
+### Opción 2 · Sin Docker (Windows)
 
 Requisitos: [.NET 10 SDK](https://dotnet.microsoft.com/download), [Node.js 22+](https://nodejs.org), [SQL Server LocalDB](https://learn.microsoft.com/sql/database-engine/configure-windows/sql-server-express-localdb) y [sqlcmd](https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-utility).
 
@@ -81,7 +109,7 @@ Todos con la clave `Demo1234!`. La pantalla de login tiene accesos rápidos para
 
 ### Envío de mails
 
-Por defecto (`Correo:Modo = Carpeta`) los mails **no se envían**: se guardan como `.eml` en `src/backend/CompraTrack.Api/correos-enviados/` y se pueden abrir con Outlook o Thunderbird.
+Por defecto (`Correo:Modo = Carpeta`) los mails **no se envían**: se guardan como `.eml` en la carpeta `correos-enviados/` de la API (con Docker, dentro del contenedor: ver el comando `docker compose cp` de arriba) y se pueden abrir con Outlook o Thunderbird.
 
 Para enviarlos de verdad, configurar SMTP **sin escribir la clave en el repositorio**:
 
@@ -106,6 +134,7 @@ cd src/frontend; npm run build; npm run lint   # tipos, build y linter del front
 ## Estructura
 
 ```
+├── docker-compose.yml        base + API + frontend con un comando
 ├── database/                 esquema SQL, datos demo y script de creación
 ├── docs/                     modelo de datos y capturas
 ├── src/backend/CompraTrack.Api

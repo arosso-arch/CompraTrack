@@ -1,0 +1,86 @@
+# CompraTrack completo con un solo comando:
+#
+#     docker compose up --build
+#
+#   App:            http://localhost:8080   (usuarios demo: admin / compras / deposito / consulta · clave Demo1234!)
+#   API (OpenAPI):  http://localhost:5137/docs
+#
+# Para empezar de cero con los datos de demostración:  docker compose down -v && docker compose up --build
+
+name: compratrack
+
+x-zona-horaria: &zona-horaria
+  TZ: America/Argentina/Buenos_Aires   # las fechas del demo se calculan desde "hoy"
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64   # en Mac con Apple Silicon corre emulado
+    environment:
+      <<: *zona-horaria
+      ACCEPT_EULA: "Y"
+      # Contraseña solo para este contenedor local: el puerto de la base no se publica fuera de Docker.
+      MSSQL_SA_PASSWORD: CompraTrack-Local-2026
+    volumes:
+      - datos-sql:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    # Para conectarse con SSMS o Azure Data Studio, descomentar:
+    # ports:
+    #   - "14333:1433"
+
+  # Corre una sola vez: crea la base y carga los datos ficticios (si la base ya existe, no la toca).
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *zona-horaria
+      SQLCMDPASSWORD: CompraTrack-Local-2026
+    volumes:
+      - ./database:/database:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        sql() { /opt/mssql-tools18/bin/sqlcmd -C -S db -U sa -b -f 65001 "$$@"; }
+        if [ "$$(sql -h -1 -W -Q "SET NOCOUNT ON; SELECT CASE WHEN DB_ID('CompraTrack') IS NULL THEN 0 ELSE 1 END")" = "1" ]; then
+          echo "La base CompraTrack ya existe: se conservan los datos."
+          exit 0
+        fi
+        sql -i /database/00_crear_base.sql
+        sql -d CompraTrack -i /database/01_esquema.sql
+        sql -d CompraTrack -i /database/02_datos_demo.sql
+        echo "Base CompraTrack lista."
+
+  api:
+    build:
+      context: .
+      dockerfile: src/backend/CompraTrack.Api/Dockerfile
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *zona-horaria
+      # Development: documentación /docs activa y clave JWT de ejemplo. Es un entorno local, no de producción.
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__CompraTrack: "Server=db;Database=CompraTrack;User Id=sa;Password=CompraTrack-Local-2026;TrustServerCertificate=True"
+    ports:
+      - "5137:8080"
+
+  web:
+    build:
+      context: src/frontend
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  datos-sql:

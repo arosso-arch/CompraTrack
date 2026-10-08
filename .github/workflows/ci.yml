@@ -95,3 +95,31 @@ jobs:
             IF NOT EXISTS (SELECT 1 FROM dbo.vw_EstadoEntregaItem WHERE EstadoEntrega = 'ENTREGA PARCIAL') THROW 50000, 'Faltan entregas parciales', 1;
             IF EXISTS (SELECT 1 FROM dbo.Recepcion WHERE Fecha > CAST(GETDATE() AS DATE)) THROW 50000, 'Hay recepciones con fecha futura', 1;
             SELECT 'OK' AS Resultado;"
+
+  docker:
+    name: Docker Compose (app completa)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Levantar base, API y frontend
+        run: docker compose up --build -d
+
+      - name: Probar la app a través de Nginx
+        run: |
+          for intento in $(seq 1 60); do
+            curl -fs -o /dev/null http://localhost:8080/ && break
+            sleep 3
+          done
+          TOKEN=$(curl -fsS --retry 20 --retry-delay 3 --retry-all-errors -X POST http://localhost:8080/api/auth/login \
+            -H 'Content-Type: application/json' -d '{"usuario":"compras","clave":"Demo1234!"}' | jq -r .token)
+          test -n "$TOKEN" && test "$TOKEN" != "null"
+          TOTAL=$(curl -fsS "http://localhost:8080/api/ordenes?tamanioPagina=1" -H "Authorization: Bearer $TOKEN" | jq .total)
+          echo "Órdenes: $TOTAL" && test "$TOTAL" -eq 60
+          curl -fsS http://localhost:8080/api/ordenes/55/pdf -H "Authorization: Bearer $TOKEN" -o orden.pdf
+          head -c 5 orden.pdf | grep -q '%PDF-' && echo "PDF generado: $(stat -c %s orden.pdf) bytes"
+          curl -fsS -o /dev/null http://localhost:8080/ordenes/55 && echo "Ruta del frontend OK"
+
+      - name: Logs si algo falló
+        if: failure()
+        run: docker compose logs --no-color

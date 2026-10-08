@@ -1,0 +1,11 @@
+# Contexto de build de la API (raíz del repo): solo se necesita src/backend.
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/correos-enviados
+.git
+.vs
+.vscode
+docs
+tests
