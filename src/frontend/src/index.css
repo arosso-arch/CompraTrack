@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+
+  /* Color de marca: un verde azulado sobrio. Se usa como "marca-600", "marca-50", etc. */
+  --color-marca-50: oklch(0.97 0.02 185);
+  --color-marca-100: oklch(0.94 0.04 185);
+  --color-marca-200: oklch(0.88 0.07 185);
+  --color-marca-500: oklch(0.62 0.11 185);
+  --color-marca-600: oklch(0.53 0.1 185);
+  --color-marca-700: oklch(0.45 0.09 185);
+  --color-marca-900: oklch(0.3 0.05 185);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800;
+  }
+}
+
+/* Números alineados en tablas y tarjetas */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
