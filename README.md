@@ -41,7 +41,7 @@ Sistema web de gestión de **órdenes de compra** y **recepción de mercadería*
 - **Reglas de negocio puras** (`ReglasOrden`) separadas del acceso a datos y cubiertas con tests unitarios.
 - **Protección ante cambios concurrentes**: los `UPDATE` verifican el estado esperado (`WHERE Estado = 'ABIERTA'`), así un usuario no puede, por ejemplo, registrar un ingreso en una orden que otro acaba de cerrar.
 - **Permisos en el JWT** y un atributo `[RequierePermiso(...)]` por endpoint; todo endpoint exige sesión salvo que se indique lo contrario.
-- **Envío de mails desacoplado** (`IEnvioCorreo`): en producción sale por SMTP; en desarrollo y en el demo público se guarda como `.eml` y no se envía, para que nadie pueda usar el demo para mandar correos.
+- **Envío de mails desacoplado** (`IEnvioCorreo`): en producción sale por SMTP; en desarrollo se guarda como `.eml` en una carpeta y no se envía, así se puede probar todo el flujo sin una casilla real.
 - Errores en formato estándar **ProblemDetails** (RFC 9457) con mensajes en español, login con **rate limiting** y documentación **OpenAPI** interactiva.
 
 **Frontend**
@@ -120,7 +120,6 @@ cd src/frontend; npm run build; npm run lint   # tipos, build y linter del front
 
 - [ ] Administración de usuarios, roles y permisos desde la interfaz
 - [ ] Tests de integración de la API y tests end-to-end del frontend
-- [ ] Demo online
 
 ## Documentación
 

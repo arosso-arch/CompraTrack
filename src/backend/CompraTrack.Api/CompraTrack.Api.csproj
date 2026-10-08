@@ -18,12 +18,5 @@
     <PackageReference Include="Scalar.AspNetCore" Version="2.17.14" />
   </ItemGroup>
 
-  <!-- Scripts de la base, para reiniciar los datos del demo (Features/Demo). -->
-  <ItemGroup>
-    <Content Include="..\..\..\database\01_esquema.sql;..\..\..\database\02_datos_demo.sql"
-             Link="Scripts\%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
-  </ItemGroup>
 
 </Project>

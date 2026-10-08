@@ -22,23 +22,18 @@ export function Login() {
   const [clave, setClave] = useState('')
   const [error, setError] = useState<unknown>(null)
   const [enviando, setEnviando] = useState(false)
-  const [demora, setDemora] = useState(false)
 
   if (sesion) return <Navigate to={destino} replace />
 
   async function ingresar(u: string, c: string) {
     setEnviando(true)
     setError(null)
-    // En el demo, la API y la base se suspenden sin uso: el primer ingreso puede tardar hasta un minuto.
-    const aviso = setTimeout(() => setDemora(true), 4000)
     try {
       await iniciarSesion(u, c)
       navegar(destino, { replace: true })
     } catch (e) {
       setError(e)
     } finally {
-      clearTimeout(aviso)
-      setDemora(false)
       setEnviando(false)
     }
   }
@@ -65,11 +60,6 @@ export function Login() {
               {(id) => <Input id={id} type="password" value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="current-password" required />}
             </Campo>
             {error !== null && <MensajeError error={error} />}
-            {demora && (
-              <p role="status" className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800 ring-1 ring-sky-200">
-                Despertando el demo… El servidor estaba en reposo y el primer ingreso puede tardar hasta un minuto.
-              </p>
-            )}
             <Boton type="submit" cargando={enviando} className="w-full">Ingresar</Boton>
           </form>
         </div>

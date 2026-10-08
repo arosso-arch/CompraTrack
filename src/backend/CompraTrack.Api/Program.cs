@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using CompraTrack.Api.Features.Auth;
 using CompraTrack.Api.Features.Catalogo;
-using CompraTrack.Api.Features.Demo;
 using CompraTrack.Api.Features.Ordenes;
 using CompraTrack.Api.Features.Proveedores;
 using CompraTrack.Api.Features.Recepciones;
@@ -99,16 +98,14 @@ builder.Services.AddRateLimiter(o =>
         IpCliente(http), _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromHours(1) }));
 });
 
-// En Azure la API está detrás de un proxy: la IP real del visitante y el esquema (https) llegan en
-// los headers X-Forwarded-*. Sin esto, todos los visitantes compartirían los límites de arriba.
+// Si la API se publica detrás de un proxy (Azure, IIS, Nginx), la IP real del cliente y el esquema (https)
+// llegan en los headers X-Forwarded-*. Sin esto, todos los clientes compartirían los límites de arriba.
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    o.KnownIPNetworks.Clear();   // el proxy de Azure no tiene IPs fijas conocidas
+    o.KnownIPNetworks.Clear();   // en hostings como Azure el proxy no tiene IPs fijas conocidas
     o.KnownProxies.Clear();
 });
-
-builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Seccion));
 
 // ---------- API ----------
 builder.Services.AddControllers(o => o.ModelMetadataDetailsProviders.Add(new MensajesValidacionEnEspanol()))
@@ -137,7 +134,7 @@ app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-// La documentación interactiva se publica en desarrollo y, en el demo, si Api:Documentacion = true.
+// La documentación interactiva se publica en desarrollo, o en otros entornos si Api:Documentacion = true.
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Api:Documentacion"))
 {
     app.MapOpenApi().AllowAnonymous();
