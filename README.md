@@ -1,5 +1,7 @@
 # CompraTrack
 
+[![CI](https://github.com/arosso-arch/CompraTrack/actions/workflows/ci.yml/badge.svg)](https://github.com/arosso-arch/CompraTrack/actions/workflows/ci.yml)
+
 Sistema web de gestión de **órdenes de compra** y **recepción de mercadería** para empresas que compran insumos (papel, cartón, etiquetas) a múltiples proveedores.
 
 > Evolución web de un sistema de escritorio (WinForms + SQL Server) que desarrollé y que está en uso real en producción.
@@ -118,7 +120,6 @@ cd src/frontend; npm run build; npm run lint   # tipos, build y linter del front
 
 - [ ] Administración de usuarios, roles y permisos desde la interfaz
 - [ ] Tests de integración de la API y tests end-to-end del frontend
-- [ ] Integración continua con GitHub Actions
 - [ ] Demo online
 
 ## Documentación
