@@ -90,7 +90,7 @@ export function Tarjeta({ titulo, acciones, children, className, sinPadding }: {
   sinPadding?: boolean
 }) {
   return (
-    <section className={cx('rounded-xl bg-white shadow-sm ring-1 ring-slate-200', className)}>
+    <section className={cx('min-w-0 rounded-xl bg-white shadow-sm ring-1 ring-slate-200', className)}>
       {(titulo || acciones) && (
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
           <h2 className="text-sm font-semibold text-slate-900">{titulo}</h2>

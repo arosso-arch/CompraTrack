@@ -34,3 +34,7 @@ export function hoyIso() {
 }
 
 export const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+/** plural(1, 'ingreso') → "1 ingreso"; plural(3, 'orden', 'órdenes') → "3 órdenes" */
+export const plural = (cantidad: number, singular: string, pluralTexto = `${singular}s`) =>
+  `${entero.format(cantidad)} ${cantidad === 1 ? singular : pluralTexto}`

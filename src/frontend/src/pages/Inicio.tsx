@@ -7,7 +7,7 @@ import { useAuth } from '@/auth/contexto'
 import { BarraProgreso, Boton, EncabezadoPagina, InsigniaEstadoEntrega, InsigniaEstadoOrden, Tarjeta } from '@/components/ui'
 import { cx } from '@/lib/cx'
 import { Cargando, MensajeError, Vacio } from '@/components/Estados'
-import { formatoEntero, formatoFecha, formatoKg, formatoToneladas } from '@/lib/formato'
+import { formatoEntero, formatoFecha, formatoKg, formatoToneladas, plural } from '@/lib/formato'
 
 export function Inicio() {
   const { usuario, tienePermiso } = useAuth()
@@ -26,13 +26,13 @@ export function Inicio() {
       {resumen.isError ? <MensajeError error={resumen.error} /> : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Indicador etiqueta="Órdenes abiertas" valor={resumen.data && formatoEntero(resumen.data.ordenesAbiertas)}
-                     detalle={resumen.data && `${formatoEntero(resumen.data.ordenesCreadasMes)} creadas este mes`} />
+                     detalle={resumen.data && `${plural(resumen.data.ordenesCreadasMes, 'creada', 'creadas')} este mes`} />
           <Indicador etiqueta="Ítems por recibir" valor={resumen.data && formatoEntero(resumen.data.itemsPendientes)}
                      detalle="en espera o con entrega parcial" />
           <Indicador etiqueta="Pendiente de entrega" valor={resumen.data && formatoToneladas(resumen.data.kgPendientes)}
                      detalle={resumen.data && formatoKg(resumen.data.kgPendientes)} />
           <Indicador etiqueta="Recibido este mes" valor={resumen.data && formatoToneladas(resumen.data.kgRecibidosMes)}
-                     detalle={resumen.data && `${formatoEntero(resumen.data.recepcionesHoy)} ingresos hoy`} />
+                     detalle={resumen.data && `${plural(resumen.data.recepcionesHoy, 'ingreso')} hoy`} />
         </div>
       )}
 
@@ -93,7 +93,7 @@ function EntregasPendientes({ className }: { className?: string }) {
           </ul>
         )}
       {data && data.length > 8 && (
-        <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">y {data.length - 8} ítems más pendientes</p>
+        <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">y {plural(data.length - 8, 'ítem pendiente', 'ítems pendientes')} más</p>
       )}
     </Tarjeta>
   )

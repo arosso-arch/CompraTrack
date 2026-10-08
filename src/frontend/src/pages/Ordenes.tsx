@@ -74,7 +74,7 @@ export function Ordenes() {
               {hayFiltros && <button className="text-marca-700 hover:underline" onClick={() => setParams({})}>Limpiar filtros</button>}
             </Vacio>
           ) : (
-            <div className={cx('overflow-x-auto transition-opacity', ordenes.isPlaceholderData && 'opacity-60')}>
+            <div className={cx('relative overflow-x-auto transition-opacity', ordenes.isPlaceholderData && 'opacity-60')}>
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
                   <tr>

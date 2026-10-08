@@ -1,12 +1,20 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Link, Route, Routes } from 'react-router'
 import { PERMISOS } from '@/api/tipos'
 import { RutaProtegida } from '@/auth/RutaProtegida'
+import { Cargando } from '@/components/Estados'
 import { Layout } from '@/layout/Layout'
 import { Inicio } from '@/pages/Inicio'
 import { Login } from '@/pages/Login'
 import { NuevaOrden } from '@/pages/NuevaOrden'
 import { OrdenDetalle } from '@/pages/OrdenDetalle'
 import { Ordenes } from '@/pages/Ordenes'
+import { ProveedorDetalle } from '@/pages/ProveedorDetalle'
+import { Proveedores } from '@/pages/Proveedores'
+import { Recepciones } from '@/pages/Recepciones'
+
+// Reportes usa Recharts (la dependencia más pesada): se descarga recién al entrar a esa pantalla.
+const Reportes = lazy(() => import('@/pages/Reportes').then((m) => ({ default: m.Reportes })))
 
 export default function App() {
   return (
@@ -18,6 +26,10 @@ export default function App() {
           <Route path="ordenes" element={<RutaProtegida permiso={PERMISOS.ordenesVer}><Ordenes /></RutaProtegida>} />
           <Route path="ordenes/nueva" element={<RutaProtegida permiso={PERMISOS.ordenesCrear}><NuevaOrden /></RutaProtegida>} />
           <Route path="ordenes/:id" element={<RutaProtegida permiso={PERMISOS.ordenesVer}><OrdenDetalle /></RutaProtegida>} />
+          <Route path="recepciones" element={<RutaProtegida permiso={PERMISOS.ordenesVer}><Recepciones /></RutaProtegida>} />
+          <Route path="proveedores" element={<RutaProtegida permiso={PERMISOS.proveedoresVer}><Proveedores /></RutaProtegida>} />
+          <Route path="proveedores/:id" element={<RutaProtegida permiso={PERMISOS.proveedoresVer}><ProveedorDetalle /></RutaProtegida>} />
+          <Route path="reportes" element={<RutaProtegida permiso={PERMISOS.reportesVer}><Suspense fallback={<Cargando />}><Reportes /></Suspense></RutaProtegida>} />
           <Route path="*" element={<NoEncontrado />} />
         </Route>
       </Routes>

@@ -160,7 +160,7 @@ function TablaItems({ orden, puede }: { orden: Orden; puede: Permisos }) {
   return (
     <>
       {quitar.isError && <div className="p-4"><MensajeError error={quitar.error} /></div>}
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
             <tr>
